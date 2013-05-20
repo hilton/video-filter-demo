@@ -3,7 +3,7 @@
 @main("Welcome to Play 2.1") {
 
 <div>
-    <style>
+    <style scoped>
 
         div {
             margin-top: 200px;
@@ -42,10 +42,8 @@
         var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
         var socket = new WS("@routes.Application.stream().webSocketURL()")
 
-
         socket.onmessage = function(event) {
             var data = event.data
-            console.log("receiving " + data)
             var target = $("#target").get()[0];
             var url = window.webkitURL.createObjectURL(data);
             target.onload = function() {
