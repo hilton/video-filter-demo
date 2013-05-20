@@ -1,0 +1,86 @@
+@(message: String)(implicit r: RequestHeader)
+
+@main("Welcome to Play 2.1") {
+
+<div>
+
+    <video id="live" width="320" height="240" autoplay style="float: right; margin-right:40px"></video>
+    <canvas width="320" id="canvas" height="240" style="display: inline;"></canvas>
+
+    <style>
+
+        div {
+            margin-top: 200px;
+            margin-left: 200px;
+            -webkit-perspective: 500px;
+            -webkit-perspective-origin-x: 50%;
+            -webkit-perspective-origin-y: 50%;
+        }
+        img {
+            width: 400px;
+            height: 300px;
+            box-shadow: 0 0 20px rgba(0,0,0,.4);
+            border: 4px solid #fff;
+            -webkit-transform: rotateY(45deg);
+        }
+    </style>
+    <div>
+        <img id="target" width="320" height="240" style="display: inline;" src=""/>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+
+    function dataURItoBlob(dataURI) {
+        var binary = atob(dataURI.split(',')[1]);
+        var array = [];
+        for(var i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
+        }
+        return new Blob([new Uint8Array(array)], {type: 'image/jpg'});
+    }
+
+    $(document).ready(function(e) {
+
+        var video = $("#live").get()[0];
+        var canvas = $("#canvas");
+        var ctx = canvas.get()[0].getContext('2d');
+
+        var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
+        var socket = new WS("@routes.Application.acquire().webSocketURL()")
+
+        socket.onmessage = function(event) {
+            var data = event.data
+            var target = $("#target").get()[0];
+            var url = window.webkitURL.createObjectURL(data);
+            target.onload = function() {
+                window.webkitURL.revokeObjectURL(url);
+            };
+            target.src = url;
+
+        }
+
+        var onwebcamfail = function(err) {
+            console.log("error with cam")
+        }
+
+        navigator.webkitGetUserMedia({video: true},
+                function(stream) {
+                    video.src = window.webkitURL.createObjectURL(stream);
+                }, onwebcamfail)
+
+        var timer = setInterval(function() {
+            ctx.drawImage(video, 0, 0, 320, 240);
+            var data = canvas.get()[0].toDataURL('image/jpg', 1.0);
+            var newblob = dataURItoBlob(data);
+            socket.send(newblob)
+        }, 100);
+
+        canvas.hide();
+
+
+    })
+</script>
+
+}

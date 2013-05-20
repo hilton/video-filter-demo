@@ -1,0 +1,7 @@
+This is a play application showing how to use Iteratee, Eumerator and Enumeratee
+================================================================================
+
+To use it, point your chrome browser to http://localhost:9000. Accept the camera request.
+
+From any other web clients, point your browser to http://localhost:9000/show. You should see yourself with an image transformation. You can modify the source code
+to add more transformation (Enumeratee).

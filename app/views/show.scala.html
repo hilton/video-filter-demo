@@ -1,0 +1,60 @@
+@(message: String)(implicit r: RequestHeader)
+
+@main("Welcome to Play 2.1") {
+
+<div>
+    <style>
+
+        div {
+            margin-top: 200px;
+            margin-left: 100px;
+            -webkit-perspective: 500px;
+            -webkit-perspective-origin-x: 50%;
+            -webkit-perspective-origin-y: 50%;
+        }
+        img {
+            width: 400px;
+            height: 300px;
+            box-shadow: 0 0 20px rgba(0,0,0,.4);
+            border: 4px solid #fff;
+            -webkit-transform: rotateY(45deg);
+        }
+    </style>
+    <div>
+        <img id="target" width="320" height="240" style="display: inline;" src=""/>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+
+    function dataURItoBlob(dataURI) {
+        var binary = atob(dataURI.split(',')[1]);
+        var array = [];
+        for(var i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
+        }
+        return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+    }
+
+    $(document).ready(function(e) {
+
+        var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
+        var socket = new WS("@routes.Application.stream().webSocketURL()")
+
+
+        socket.onmessage = function(event) {
+            var data = event.data
+            console.log("receiving " + data)
+            var target = $("#target").get()[0];
+            var url = window.webkitURL.createObjectURL(data);
+            target.onload = function() {
+                window.webkitURL.revokeObjectURL(url);
+            };
+            target.src = url;
+        }
+
+    })
+</script>
+
+}
