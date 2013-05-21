@@ -60,11 +60,11 @@ object Application extends Controller {
   val videoStream = rawStream &> videoReflectionEncoder  ><> videoPinkEncoder // ><> videoBlueEncoder ><> videoPinkEncoder
 
   // This is the ws method called from our main page
-  def acquire = WebSocket.async[Array[Byte]] {   implicit request =>
+  def acquire = WebSocket.using[Array[Byte]] {   implicit request =>
     // The Iteratee is coming from the camera. It is an immutable interface that represents a consumer, it consumes chunks of data each of type Byte[Array]
     // and eventually produces a computed value of type A. Iteratee[String,Int] is an iteratee that consumes chunks of strings and eventually
     // produces an Int (that could be for instance number of characters in the passed chunks)
-    Promise.pure( Iteratee.foreach[Array[Byte]] ( _ match {
+    ( Iteratee.foreach[Array[Byte]] ( _ match {
       case message : Array[Byte] => {
         // Push the message to the enumerator (rawstream)
         channel.push( message )
@@ -75,8 +75,8 @@ object Application extends Controller {
   }
 
   // This is the ws method called by our clients
-  def stream =  WebSocket.async[Array[Byte]] {  implicit request =>
-    Promise.pure(Iteratee.ignore , videoStream)
+  def stream =  WebSocket.using[Array[Byte]] {  implicit request =>
+    (Iteratee.ignore , videoStream)
   }
 
 
