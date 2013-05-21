@@ -32,12 +32,12 @@ object Application extends Controller {
 
   // Home page
   def index = Action {  implicit request =>
-    Ok(views.html.index("Your new application is ready."))
+    Ok(views.html.index())
   }
 
   // Entry point for our client
   def show = Action {  implicit request =>
-    Ok(views.html.show("Your new application is ready."))
+    Ok(views.html.show())
   }
 
   // This is the image stream coming from the web cam. It is what we call an Enumerator. It
