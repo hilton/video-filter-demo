@@ -1,42 +1,31 @@
 package controllers
 
-import play.api._
-import play.api.mvc._
-import play.api.libs.concurrent.Promise
-import play.api.libs.iteratee.{Concurrent, Enumerator, Iteratee}
-import scala.collection.mutable.{SynchronizedQueue, HashMap}
-import java.util.concurrent.atomic.{AtomicReference, AtomicLong}
-import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.libs.iteratee._
-import play.api.libs.concurrent._
-import Concurrent._
-
-import java.io._
-
-import play.api._
-import play.api.mvc._
-import play.api.http.HeaderNames._
-import play.api.Play.current
-import play.api.libs.iteratee._
-import play.api.libs.concurrent._
-import Concurrent._
-import play.api.libs.json._
-import play.api.libs.json.Json._
 import java.awt.Color
 import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import org.jdesktop.swingx.graphics.ReflectionRenderer
-import org.jdesktop.swingx.util.GraphicsUtilities
+
+import javax.imageio.ImageIO
+import play.api.libs.iteratee.Concurrent
+import play.api.libs.iteratee.Enumeratee
+import play.api.libs.iteratee.Iteratee
+import play.api.mvc.Action
+import play.api.mvc.Controller
+import play.api.mvc.WebSocket
 
 object Application extends Controller {
 
   // Home page
-  def index = Action {  implicit request =>
+  def index = Action { implicit request =>
     Ok(views.html.index())
   }
 
   // Entry point for our client
-  def show = Action {  implicit request =>
+  def show = Action { implicit request =>
     Ok(views.html.show())
   }
 
@@ -57,31 +46,30 @@ object Application extends Controller {
   val videoShadowEncoder = Enumeratee.map[Array[Byte]](video.appendShadow)
 
   // We apply transformation to our original image stream coming from the web cam
-  val videoStream = rawStream &> videoReflectionEncoder  ><> videoPinkEncoder // ><> videoBlueEncoder ><> videoPinkEncoder
+  val videoStream = rawStream &> videoReflectionEncoder ><> videoPinkEncoder // ><> videoBlueEncoder ><> videoPinkEncoder
 
   // This is the ws method called from our main page
-  def acquire = WebSocket.using[Array[Byte]] {   implicit request =>
+  def acquire = WebSocket.using[Array[Byte]] { implicit request =>
     // The Iteratee is coming from the camera. It is an immutable interface that represents a consumer, it consumes chunks of data each of type Byte[Array]
     // and eventually produces a computed value of type A. Iteratee[String,Int] is an iteratee that consumes chunks of strings and eventually
     // produces an Int (that could be for instance number of characters in the passed chunks)
-    ( Iteratee.foreach[Array[Byte]] {
-      case message : Array[Byte] => {
+    (Iteratee.foreach[Array[Byte]] {
+      case message: Array[Byte] => {
         // Push the message to the enumerator (rawstream)
-        channel.push( message )
+        channel.push(message)
       }
     }.map { _ =>
       channel.eofAndEnd()
-    },  videoStream)
+    }, videoStream)
   }
 
   // This is the ws method called by our clients
-  def stream =  WebSocket.using[Array[Byte]] {  implicit request =>
-    (Iteratee.ignore , videoStream)
+  def stream = WebSocket.using[Array[Byte]] { implicit request =>
+    (Iteratee.ignore, videoStream)
   }
 
-
   // Class that transform an image into another image
-  case class ImageEncoder () {
+  case class ImageEncoder() {
 
     val renderer = new ReflectionRenderer
     renderer.setOpacity(0.5f)
@@ -91,8 +79,6 @@ object Application extends Controller {
     val shadow = new org.jdesktop.swingx.graphics.ShadowRenderer
     shadow.setOpacity(0.4f)
 
-
-
     def color(data: Array[Byte], color: Color): Array[Byte] = {
       val filter = new org.jdesktop.swingx.image.ColorTintFilter(color, 0.4f)
       val stream = new ByteArrayInputStream(data)
@@ -100,29 +86,26 @@ object Application extends Controller {
       val dst = new BufferedImage(image.getWidth, image.getHeight, image.getType)
       filter.filter(image, dst)
 
-
       val baos = new ByteArrayOutputStream()
-      ImageIO.write( dst, "png", baos )
+      ImageIO.write(dst, "png", baos)
       baos.flush()
 
       baos.toByteArray
     }
 
     def appendReflection(data: Array[Byte]): Array[Byte] = {
-        val stream = new ByteArrayInputStream(data)
-        val image = ImageIO.read(stream)
+      val stream = new ByteArrayInputStream(data)
+      val image = ImageIO.read(stream)
 
       val reflection = renderer.appendReflection(image)
 
-
       val baos = new ByteArrayOutputStream()
-      ImageIO.write( reflection, "png", baos )
+      ImageIO.write(reflection, "png", baos)
       baos.flush()
 
       baos.toByteArray
 
     }
-
 
     def appendShadow(data: Array[Byte]): Array[Byte] = {
       val stream = new ByteArrayInputStream(data)
@@ -130,17 +113,13 @@ object Application extends Controller {
 
       val reflection = shadow.createShadow(image)
 
-
       val baos = new ByteArrayOutputStream()
-      ImageIO.write( reflection, "png", baos )
+      ImageIO.write(reflection, "png", baos)
       baos.flush()
 
       baos.toByteArray
     }
 
   }
-
-
-
 
 }
