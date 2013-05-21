@@ -64,14 +64,14 @@ object Application extends Controller {
     // The Iteratee is coming from the camera. It is an immutable interface that represents a consumer, it consumes chunks of data each of type Byte[Array]
     // and eventually produces a computed value of type A. Iteratee[String,Int] is an iteratee that consumes chunks of strings and eventually
     // produces an Int (that could be for instance number of characters in the passed chunks)
-    ( Iteratee.foreach[Array[Byte]] ( _ match {
+    ( Iteratee.foreach[Array[Byte]] {
       case message : Array[Byte] => {
         // Push the message to the enumerator (rawstream)
         channel.push( message )
       }
-    }).map({ in =>
-       channel.eofAndEnd()
-    }),  videoStream)
+    }.map { _ =>
+      channel.eofAndEnd()
+    },  videoStream)
   }
 
   // This is the ws method called by our clients
